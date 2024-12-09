@@ -66,9 +66,9 @@ to use \code{position_jitter()}, give the position as \code{"jitter"}.
 
 \item{start}{\code{numeric}, the bracket start position. Defaults to the maximum value of \code{y}.}
 
-\item{breaks}{\code{numeric}, the breaks for p-value labels, like c(0, 0.001, 0.01, 0.05, 1).}
+\item{breaks}{\code{numeric}, the breaks for p-value labels, like \code{c(0, 0.001, 0.01, 0.05, 1)}.}
 
-\item{labels}{\code{character}, the labels for p-value breaks, like c("\emph{\strong{", "}", "}", "ns").}
+\item{labels}{\code{character}, the labels for p-value breaks, like \code{c("***", "**", "*", "ns")}.}
 
 \item{cutoff}{\code{numeric}, the cutoff for p-value, labels above this value will be removed.}
 
@@ -125,6 +125,8 @@ For comparisons between two groups, the p-value is calculated by t-test (paramet
 
 \examples{
 \dontshow{if (interactive()) (if (getRversion() >= "3.4") withAutoprint else force)(\{ # examplesIf}
+library(ggplot2)
+
 p <- ggplot(mpg, aes(class, displ, color = class)) +
   geom_boxplot(show.legend = FALSE) +
   theme_test()
@@ -140,7 +142,7 @@ p + stat_compare(aes(label = after_stat(sprintf("\%s: \%s", method, label))))
 p + stat_compare(ref_group = "minivan")
 # If you only want to display the p-value less or equal to 0.01, you can do this.
 p + stat_compare(ref_group = "minivan", cutoff = 0.01)
-# if you want to display the significance level, you can do this.
+# If you want to display the significance level, you can do this.
 p + stat_compare(ref_group = "minivan", breaks = c(0, 0.001, 0.01, 0.05, 1))
 
 # Comparison between two groups: specify the comparison group.

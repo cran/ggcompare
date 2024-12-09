@@ -29,6 +29,8 @@
 #' @author HMU-WH
 #'
 #' @examplesIf interactive()
+#' library(ggplot2)
+#'
 #' ggplot(mpg, aes(class, displ)) +
 #'   geom_boxplot() +
 #'   annotate("bracket", xmin = 2, xmax = 4, ymin = 4.5, ymax = 5, label = "label",
@@ -60,8 +62,8 @@ geom_bracket <- function(mapping = NULL, data = NULL,
 #' @param ... additional arguments passed on to [geom_bracket()].
 #' @param nudge `numeric`, the nudge of start position in fraction of scale range.
 #' @param start `numeric`, the bracket start position. Defaults to the maximum value of `y`.
-#' @param breaks `numeric`, the breaks for p-value labels, like c(0, 0.001, 0.01, 0.05, 1).
-#' @param labels `character`, the labels for p-value breaks, like c("***", "**", "*", "ns").
+#' @param breaks `numeric`, the breaks for p-value labels, like `c(0, 0.001, 0.01, 0.05, 1)`.
+#' @param labels `character`, the labels for p-value breaks, like `c("***", "**", "*", "ns")`.
 #' @param cutoff `numeric`, the cutoff for p-value, labels above this value will be removed.
 #' @param method `function`, the method for the test; it should support formula interface and return a list with components `p.value` and `method` (name).
 #' @param ref_group `character`, the reference group for comparison. other groups will be compared to this group.
@@ -92,6 +94,8 @@ geom_bracket <- function(mapping = NULL, data = NULL,
 #' @author HMU-WH
 #'
 #' @examplesIf interactive()
+#' library(ggplot2)
+#'
 #' p <- ggplot(mpg, aes(class, displ, color = class)) +
 #'   geom_boxplot(show.legend = FALSE) +
 #'   theme_test()
@@ -107,7 +111,7 @@ geom_bracket <- function(mapping = NULL, data = NULL,
 #' p + stat_compare(ref_group = "minivan")
 #' # If you only want to display the p-value less or equal to 0.01, you can do this.
 #' p + stat_compare(ref_group = "minivan", cutoff = 0.01)
-#' # if you want to display the significance level, you can do this.
+#' # If you want to display the significance level, you can do this.
 #' p + stat_compare(ref_group = "minivan", breaks = c(0, 0.001, 0.01, 0.05, 1))
 #'
 #' # Comparison between two groups: specify the comparison group.

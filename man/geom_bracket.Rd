@@ -92,6 +92,8 @@ Add brackets with labeled annotations to a ggplot.
 
 \examples{
 \dontshow{if (interactive()) (if (getRversion() >= "3.4") withAutoprint else force)(\{ # examplesIf}
+library(ggplot2)
+
 ggplot(mpg, aes(class, displ)) +
   geom_boxplot() +
   annotate("bracket", xmin = 2, xmax = 4, ymin = 4.5, ymax = 5, label = "label",
