@@ -75,11 +75,11 @@ geom_bracket <- function(mapping = NULL, data = NULL,
 #' @param comparisons `list`, a list of comparisons to be made. Each element should contain two groups to be compared.
 #' @param step_increase `numeric`, the step increase in fraction of scale range for every additional comparison, in order to avoid overlapping brackets.
 #'
-#' @returns `LayerInstance`, a layer that can be added to a ggplot.
-#'
 #' @details
 #' Usually you do not need to specify the test method, you only need to tell `stat_compare()` whether you want to perform a parametric test or a nonparametric test, and `stat_compare()` will automatically choose the appropriate test method based on your data.
 #' For comparisons between two groups, the p-value is calculated by t-test (parametric) or Wilcoxon rank sum test (nonparametric). For comparisons among more than two groups, the p-value is calculated by One-way ANOVA (parametric) or Kruskal-Wallis test (nonparametric).
+#'
+#' @returns `LayerInstance`, a layer that can be added to a ggplot.
 #'
 #' @section Aesthetics:
 #' - required: `x`, `y`
@@ -204,9 +204,7 @@ GeomBracket <- ggplot2::ggproto(
     params[["flipped"]] <- ggplot2::has_flipped_aes(data, params)
     return(params)
   },
-  draw_key = function(data, params, size) {
-    grid::nullGrob()
-  },
+  draw_key = ggplot2::draw_key_blank,
   draw_group = function(data, panel_params, coord, parse = FALSE, arrow = NULL, bracket = TRUE, flipped = FALSE) {
     data <- coord[["transform"]](data, panel_params)
     if (flipped == inherits(coord, "CoordFlip")) {
@@ -360,8 +358,8 @@ StatCompare <- ggplot2::ggproto(
     constant_aes <- split(data[, setdiff(colnames(data), c("y", "group")), drop = FALSE], ~ x + PANEL) |>
       lapply(\(x) { as.data.frame(lapply(x[, setdiff(colnames(x), c("x", "PANEL")), drop = FALSE], \(y) { length(unique(stats::na.omit(y))) })) }) |>
       (\(x) { do.call(rbind, args = x) })()
-    constant_aes <- unique(data[, c("x", "PANEL", colnames(constant_aes)[vapply(constant_aes, \(x) { all(x == 1) }, logical(1))]), drop = FALSE])
-    data <- ggproto_parent(Stat, self)$compute_layer(data, params, layout)
+    constant_aes <- unique(data[, c("x", "PANEL", colnames(constant_aes)[vapply(constant_aes, \(x) { all(x <= 1) }, logical(1))]), drop = FALSE])
+    data <- ggplot2::ggproto_parent(Stat, self)$compute_layer(data, params, layout)
     constant_aes <- constant_aes[, union(c("x", "PANEL"), setdiff(colnames(constant_aes), colnames(data))), drop = FALSE]
     if ("x" %in% colnames(data)) {
       data <- merge(data, constant_aes, by = c("x", "PANEL"), all.x = TRUE)
@@ -465,6 +463,7 @@ StatCompare <- ggplot2::ggproto(
         (\(x) { do.call(rbind, args = x) })()
     }
     data[["q"]] <- p.adjust(data[["p"]], method = correction)
+    data <- data[rowSums(is.na(data[c("p", "q", "method")])) < 3, , drop = FALSE]
     return(data)
   }
 )

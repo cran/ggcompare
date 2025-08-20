@@ -1,6 +1,10 @@
+# ggcompare 0.0.4
+
+- Fixed aesthetic mapping failure when x grouping is missing in some panels.
+
 # ggcompare 0.0.3
 
-- Fix the display error for the `labels` parameter description of the `stat_compare()` function.
+- Fixed display error in `labels` parameter description of `stat_compare()`.
 
 # ggcompare 0.0.2
 
