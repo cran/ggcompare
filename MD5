@@ -1,9 +1,9 @@
-0f8a1a7c7e58de8d773c1482dc9002e7 *DESCRIPTION
+698091ac3cb919773c346a168c66c337 *DESCRIPTION
 df8223962df112e08663401b930d559b *NAMESPACE
-bdf4feeef9433ce0369e7aad10b0ec8d *NEWS.md
-433f3e1ef15214571c062784620090c3 *R/GGExtensions.R
+1afa9b336f4ed65fe47e4405fef62118 *NEWS.md
+6be2bbea10c7a8e3c21dc03d9b19e37b *R/GGExtensions.R
 36909710e27750e6559681e116ff9e80 *R/ggcompare-package.R
 b4c7ce193578628e3f58511ed81b1c4d *man/figures/logo.png
 7b54c80f1fae9de317f6b4ba26a67061 *man/geom_bracket.Rd
 6fe0b7f353829ec12007fd1ce28dbb37 *man/ggcompare-package.Rd
-e12a755a2c3f708799b754dc99487d59 *man/stat_compare.Rd
+3027a33d376b95738dd80bd61f414d90 *man/stat_compare.Rd

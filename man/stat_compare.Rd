@@ -72,7 +72,7 @@ to use \code{position_jitter()}, give the position as \code{"jitter"}.
 
 \item{cutoff}{\code{numeric}, the cutoff for p-value, labels above this value will be removed.}
 
-\item{method}{\code{function}, the method for the test; it should support formula interface and return a list with components \code{p.value} and \code{method} (name).}
+\item{method}{\code{function}, the method for the test, it should support both the \verb{x, y} interface for comparing two groups and the \code{formula} interface for comparing more than two groups. The function should return a \code{list} with components \code{p.value} (the test's p-value) and \code{method} (a character string of the test method name).}
 
 \item{ref_group}{\code{character}, the reference group for comparison. other groups will be compared to this group.}
 
@@ -80,7 +80,7 @@ to use \code{position_jitter()}, give the position as \code{"jitter"}.
 
 \item{parametric}{\code{logical}, whether to use parametric test (t-test, One-way ANOVA) or non-parametric test (Wilcoxon rank sum test, Kruskal-Wallis test). Applicable only when \code{method} is NULL.}
 
-\item{correction}{\code{character}, the method for p-value adjustment; options include \link[stats:p.adjust]{p.adjust.methods} with "\code{none}" as the default.}
+\item{correction}{\code{character}, the method for p-value adjustment, options include \link[stats:p.adjust]{p.adjust.methods} with "\code{none}" as the default.}
 
 \item{panel_indep}{\code{logical}, whether to correct the p-value only at the panel level. If \code{FALSE}, the p-value will be corrected at the layer level.}
 

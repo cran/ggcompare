@@ -1,3 +1,6 @@
+# ggcompare 0.0.5
+- Clarified the comparative relationship when comparing two groups.
+
 # ggcompare 0.0.4
 
 - Fixed aesthetic mapping failure when x grouping is missing in some panels.

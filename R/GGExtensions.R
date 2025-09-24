@@ -65,11 +65,11 @@ geom_bracket <- function(mapping = NULL, data = NULL,
 #' @param breaks `numeric`, the breaks for p-value labels, like `c(0, 0.001, 0.01, 0.05, 1)`.
 #' @param labels `character`, the labels for p-value breaks, like `c("***", "**", "*", "ns")`.
 #' @param cutoff `numeric`, the cutoff for p-value, labels above this value will be removed.
-#' @param method `function`, the method for the test; it should support formula interface and return a list with components `p.value` and `method` (name).
+#' @param method `function`, the method for the test, it should support both the `x, y` interface for comparing two groups and the `formula` interface for comparing more than two groups. The function should return a `list` with components `p.value` (the test's p-value) and `method` (a character string of the test method name).
 #' @param ref_group `character`, the reference group for comparison. other groups will be compared to this group.
 #' @param tip_length `numeric`, the length of the bracket tips in fraction of scale range.
 #' @param parametric `logical`, whether to use parametric test (t-test, One-way ANOVA) or non-parametric test (Wilcoxon rank sum test, Kruskal-Wallis test). Applicable only when `method` is NULL.
-#' @param correction `character`, the method for p-value adjustment; options include [p.adjust.methods][stats::p.adjust.methods] with "`none`" as the default.
+#' @param correction `character`, the method for p-value adjustment, options include [p.adjust.methods][stats::p.adjust.methods] with "`none`" as the default.
 #' @param panel_indep `logical`, whether to correct the p-value only at the panel level. If `FALSE`, the p-value will be corrected at the layer level.
 #' @param method_args `list`, additional arguments to be passed to the test method.
 #' @param comparisons `list`, a list of comparisons to be made. Each element should contain two groups to be compared.
@@ -359,7 +359,7 @@ StatCompare <- ggplot2::ggproto(
       lapply(\(x) { as.data.frame(lapply(x[, setdiff(colnames(x), c("x", "PANEL")), drop = FALSE], \(y) { length(unique(stats::na.omit(y))) })) }) |>
       (\(x) { do.call(rbind, args = x) })()
     constant_aes <- unique(data[, c("x", "PANEL", colnames(constant_aes)[vapply(constant_aes, \(x) { all(x <= 1) }, logical(1))]), drop = FALSE])
-    data <- ggplot2::ggproto_parent(Stat, self)$compute_layer(data, params, layout)
+    data <- ggplot2::ggproto_parent(ggplot2::Stat, self)$compute_layer(data, params, layout)
     constant_aes <- constant_aes[, union(c("x", "PANEL"), setdiff(colnames(constant_aes), colnames(data))), drop = FALSE]
     if ("x" %in% colnames(data)) {
       data <- merge(data, constant_aes, by = c("x", "PANEL"), all.x = TRUE)
@@ -403,27 +403,29 @@ StatCompare <- ggplot2::ggproto(
     scales <- ggplot2::flip_data(scales, flipped)
     scale_range <- diff(scales[["y"]][["range"]][["range"]])
     bracket_spacing <- ifelse(step_increase == 0, 0, scale_range * step_increase)
-    if (is.null(start)) { start <- scales[["y"]][["range"]][["range"]][2] + nudge * scale_range }
+    if (is.null(start)) { start <- scales[["y"]][["range"]][["range"]][[2]] + nudge * scale_range }
     if (is.null(ref_group) && is.null(comparisons)) {
       .compare <- function(data) {
         return(
           tryCatch({
-            do.call(method %||% ifelse(multiple,
-                                       ifelse(parametric, stats::oneway.test, stats::kruskal.test),
-                                       ifelse(parametric, stats::t.test, stats::wilcox.test)),
-                    args = c(list(formula = y ~ group, data = data), method_args)) |>
+            (if (multiple) {
+              do.call(method %||% ifelse(parametric, stats::oneway.test, stats::kruskal.test),
+                      args = c(list(formula = y ~ group, data = data), method_args))
+            } else {
+              group <- sort(unique(data[["group"]]))
+              do.call(method %||% ifelse(parametric, stats::t.test, stats::wilcox.test),
+                      args = c(list(x = data[["y"]][data[["group"]] %in% group[[1]]], y = data[["y"]][data[["group"]] %in% group[[2]]]), method_args))
+            }) |>
               (\(x) { data.frame(p = x[["p.value"]], q = NA, method = ifelse(is.na(x[["p.value"]]), NA, x[["method"]])) })()
           }, error = \(e) { warning(e[["message"]]); data.frame(p = NA, q = NA, method = NA) })
         )
       }
-      data <- (
-        if (global) {
-          data.frame(.compare(data), xmin = min(data[["x"]]) - 0.45, xmax = max(data[["x"]]) + 0.45, ymin = start, ymax = start + tip_length * scale_range, space = 0, group = 0)
-        } else {
-          lapply(split(data, data[["x"]]), \(x) { data.frame(.compare(x), x = x[["x"]][[1]], xmin = x[["x"]][[1]] - 0.45, xmax = x[["x"]][[1]] + 0.45, ymin = start, ymax = start + tip_length * scale_range, space = 0, group = x[["x"]][[1]]) }) |>
-            (\(x) { do.call(rbind, args = x) })()
-        }
-      )
+      data <- (if (global) {
+        data.frame(.compare(data), xmin = min(data[["x"]]) - 0.45, xmax = max(data[["x"]]) + 0.45, ymin = start, ymax = start + tip_length * scale_range, space = 0, group = 0)
+      } else {
+        lapply(split(data, data[["x"]]), \(x) { data.frame(.compare(x), x = x[["x"]][[1]], xmin = x[["x"]][[1]] - 0.45, xmax = x[["x"]][[1]] + 0.45, ymin = start, ymax = start + tip_length * scale_range, space = 0, group = x[["x"]][[1]]) }) |>
+          (\(x) { do.call(rbind, args = x) })()
+      })
     } else {
       groups <- sort(unique(data[["x"]]))
       if (length(groups) <= 1) {
@@ -441,7 +443,7 @@ StatCompare <- ggplot2::ggproto(
       i <- 0
       data <- lapply(comparisons, \(comp) {
         compare <- tryCatch({
-          do.call(method %||% ifelse(parametric, stats::t.test, stats::wilcox.test), c(list(formula = y ~ x, data = data[data[["x"]] %in% comp, c("x", "y")]), method_args)) |>
+          do.call(method %||% ifelse(parametric, stats::t.test, stats::wilcox.test), c(list(x = data[["y"]][data[["x"]] %in% comp[[1]]], y = data[["y"]][data[["x"]] %in% comp[[2]]]), method_args)) |>
             (\(x) { data.frame(p = x[["p.value"]], q = NA, method = ifelse(is.na(x[["p.value"]]), NA, x[["method"]])) })()
         }, error = \(e) { warning(e[["message"]]); data.frame(p = NA, q = NA, method = NA) })
         bracket_start <- start + i * bracket_spacing
