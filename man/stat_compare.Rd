@@ -15,6 +15,7 @@ stat_compare(
   labels = NULL,
   cutoff = NULL,
   method = NULL,
+  overall = FALSE,
   ref_group = NULL,
   tip_length = 0.02,
   parametric = FALSE,
@@ -73,6 +74,8 @@ to use \code{position_jitter()}, give the position as \code{"jitter"}.
 \item{cutoff}{\code{numeric}, the cutoff for p-value, labels above this value will be removed.}
 
 \item{method}{\code{function}, the method for the test, it should support both the \verb{x, y} interface for comparing two groups and the \code{formula} interface for comparing more than two groups. The function should return a \code{list} with components \code{p.value} (the test's p-value) and \code{method} (a character string of the test method name).}
+
+\item{overall}{\code{logical}, whether to compare each group (on the axis) against the combined mean of all other groups. Applicable only when \code{ref_group} and \code{comparisons} are both \code{NULL}.}
 
 \item{ref_group}{\code{character}, the reference group for comparison. other groups will be compared to this group.}
 
@@ -137,6 +140,9 @@ p + stat_compare()
 p + stat_compare(bracket = FALSE)
 # If you want to display the test method, you can do this.
 p + stat_compare(aes(label = after_stat(sprintf("\%s: \%s", method, label))))
+
+# Comparison between each group and other combined groups.
+p + stat_compare(overall = TRUE)
 
 # Comparison between two groups: specify a reference group.
 p + stat_compare(ref_group = "minivan")

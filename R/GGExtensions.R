@@ -66,6 +66,7 @@ geom_bracket <- function(mapping = NULL, data = NULL,
 #' @param labels `character`, the labels for p-value breaks, like `c("***", "**", "*", "ns")`.
 #' @param cutoff `numeric`, the cutoff for p-value, labels above this value will be removed.
 #' @param method `function`, the method for the test, it should support both the `x, y` interface for comparing two groups and the `formula` interface for comparing more than two groups. The function should return a `list` with components `p.value` (the test's p-value) and `method` (a character string of the test method name).
+#' @param overall `logical`, whether to compare each group (on the axis) against the combined mean of all other groups. Applicable only when `ref_group` and `comparisons` are both `NULL`.
 #' @param ref_group `character`, the reference group for comparison. other groups will be compared to this group.
 #' @param tip_length `numeric`, the length of the bracket tips in fraction of scale range.
 #' @param parametric `logical`, whether to use parametric test (t-test, One-way ANOVA) or non-parametric test (Wilcoxon rank sum test, Kruskal-Wallis test). Applicable only when `method` is NULL.
@@ -107,6 +108,9 @@ geom_bracket <- function(mapping = NULL, data = NULL,
 #' # If you want to display the test method, you can do this.
 #' p + stat_compare(aes(label = after_stat(sprintf("%s: %s", method, label))))
 #'
+#' # Comparison between each group and other combined groups.
+#' p + stat_compare(overall = TRUE)
+#'
 #' # Comparison between two groups: specify a reference group.
 #' p + stat_compare(ref_group = "minivan")
 #' # If you only want to display the p-value less or equal to 0.01, you can do this.
@@ -145,7 +149,7 @@ geom_bracket <- function(mapping = NULL, data = NULL,
 #' # Panel-level P-value correction
 #' p + stat_compare(ref_group = 1, correction = "fdr", panel_indep = TRUE)
 stat_compare <- function(mapping = NULL, data = NULL, position = "identity", ...,
-                         nudge = 0, start = NULL, breaks = NULL, labels = NULL, cutoff = NULL, method = NULL, ref_group = NULL, tip_length = 0.02,
+                         nudge = 0, start = NULL, breaks = NULL, labels = NULL, cutoff = NULL, method = NULL, overall = FALSE, ref_group = NULL, tip_length = 0.02,
                          parametric = FALSE, correction = "none", panel_indep = FALSE, method_args = NULL, comparisons = NULL, step_increase = 0.1, inherit.aes = TRUE) {
   ggplot2::layer(
     data = data,
@@ -161,6 +165,7 @@ stat_compare <- function(mapping = NULL, data = NULL, position = "identity", ...
                   labels = labels,
                   cutoff = cutoff,
                   method = method,
+                  overall = overall,
                   ref_group = ref_group,
                   tip_length = tip_length,
                   parametric = parametric,
@@ -255,7 +260,7 @@ GeomBracket <- ggplot2::ggproto(
             y0 = y0[1:2],
             x1 = x1[1:2],
             y1 = y1[1:2],
-            arrow = arrow,
+            arrow = if (identical(x0, x1) || identical(y0, y1)) { NULL } else { arrow },
             default.units = "native",
             gp = grid::gpar(lty = data[["linetype"]],
                             lwd = data[["linewidth"]] * ggplot2::.pt,
@@ -301,6 +306,10 @@ StatCompare <- ggplot2::ggproto(
       method <- params[["method"]]
       if (! is.null(method)) { params[["method"]] <- match.fun(method) }
     }
+    if ("overall" %in% names(params)) {
+      overall <- params[["overall"]]
+      stopifnot(is.logical(overall) && length(overall) == 1 && ! is.na(overall))
+    }
     if ("ref_group" %in% names(params)) {
       ref_group <- params[["ref_group"]]
       stopifnot(is.null(ref_group) || ((is.numeric(ref_group) || is.character(ref_group)) && length(ref_group) == 1 && ! is.na(ref_group)))
@@ -342,13 +351,18 @@ StatCompare <- ggplot2::ggproto(
     params[["flipped"]] <- ggplot2::has_flipped_aes(data, params)
     if (is.null(params[["ref_group"]] %||% params[["comparisons"]])) {
       data <- ggplot2::flip_data(data, params[["flipped"]])
-      counts <- vapply(split(data, ~ x + PANEL), \(x) { length(unique(x[["group"]])) }, numeric(1))
-      if (any(counts > 1)) {
+      if (params[["overall"]]) {
         params[["global"]] <- FALSE
-        params[["multiple"]] <- max(counts) > 2
+        params[["multiple"]] <- FALSE
       } else {
-        params[["global"]] <- TRUE
-        params[["multiple"]] <- max(vapply(split(data[["group"]], data[["PANEL"]]), \(x) { length(unique(x)) }, numeric(1))) > 2
+        counts <- vapply(split(data, ~ x + PANEL), \(x) { length(unique(x[["group"]])) }, numeric(1))
+        if (any(counts > 1)) {
+          params[["global"]] <- FALSE
+          params[["multiple"]] <- max(counts) > 2
+        } else {
+          params[["global"]] <- TRUE
+          params[["multiple"]] <- max(vapply(split(data[["group"]], data[["PANEL"]]), \(x) { length(unique(x)) }, numeric(1))) > 2
+        }
       }
     }
     return(params)
@@ -399,7 +413,7 @@ StatCompare <- ggplot2::ggproto(
     data <- data[, setdiff(colnames(data), "space"), drop = FALSE]
     return(data)
   },
-  compute_panel = function(data, scales, nudge = 0, start = NULL, global = FALSE, method = NULL, flipped = FALSE, multiple = FALSE, ref_group = NULL, correction = "none", parametric = FALSE, method_args = NULL, comparisons = NULL, step_increase = 0.1, tip_length = 0.03) {
+  compute_panel = function(data, scales, nudge = 0, start = NULL, global = FALSE, method = NULL, flipped = FALSE, overall = FALSE, multiple = FALSE, ref_group = NULL, correction = "none", parametric = FALSE, method_args = NULL, comparisons = NULL, step_increase = 0.1, tip_length = 0.03) {
     scales <- ggplot2::flip_data(scales, flipped)
     scale_range <- diff(scales[["y"]][["range"]][["range"]])
     bracket_spacing <- ifelse(step_increase == 0, 0, scale_range * step_increase)
@@ -423,8 +437,13 @@ StatCompare <- ggplot2::ggproto(
       data <- (if (global) {
         data.frame(.compare(data), xmin = min(data[["x"]]) - 0.45, xmax = max(data[["x"]]) + 0.45, ymin = start, ymax = start + tip_length * scale_range, space = 0, group = 0)
       } else {
-        lapply(split(data, data[["x"]]), \(x) { data.frame(.compare(x), x = x[["x"]][[1]], xmin = x[["x"]][[1]] - 0.45, xmax = x[["x"]][[1]] + 0.45, ymin = start, ymax = start + tip_length * scale_range, space = 0, group = x[["x"]][[1]]) }) |>
-          (\(x) { do.call(rbind, args = x) })()
+        if (overall) {
+          lapply(sort(unique(data[["x"]])), \(x) { data.frame(.compare(transform(data, group = data[["x"]] %in% parent.env(environment())[["x"]])), x = x, xmin = x - 0.45, xmax = x + 0.45, ymin = start, ymax = start, space = 0, group = x) }) |>
+            do.call(rbind, args = _)
+        } else {
+          lapply(split(data, data[["x"]]), \(x) { data.frame(.compare(x), x = x[["x"]][[1]], xmin = x[["x"]][[1]] - 0.45, xmax = x[["x"]][[1]] + 0.45, ymin = start, ymax = start + tip_length * scale_range, space = 0, group = x[["x"]][[1]]) }) |>
+            do.call(rbind, args = _)
+        }
       })
     } else {
       groups <- sort(unique(data[["x"]]))

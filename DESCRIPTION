@@ -1,6 +1,6 @@
 Package: ggcompare
 Title: Mean Comparison in 'ggplot2'
-Version: 0.0.5
+Version: 0.0.6
 Authors@R: 
     person("Hao", "Wang", email = "wanghao8772@gmail.com", role = c("aut", "cre"), comment = c(ORCID = "0009-0000-9477-9585"))
 Description: Add mean comparison annotations to a 'ggplot'. 
@@ -13,11 +13,11 @@ URL: https://hmu-wh.github.io/ggcompare/,
 BugReports: https://github.com/HMU-WH/ggcompare/issues/
 Encoding: UTF-8
 RoxygenNote: 7.3.2
-Depends: R (>= 4.1)
+Depends: R (>= 4.2.0)
 Imports: ggplot2
 NeedsCompilation: no
-Packaged: 2025-09-24 12:28:36 UTC; 22835
+Packaged: 2026-01-31 09:50:20 UTC; 22835
 Author: Hao Wang [aut, cre] (ORCID: <https://orcid.org/0009-0000-9477-9585>)
 Maintainer: Hao Wang <wanghao8772@gmail.com>
 Repository: CRAN
-Date/Publication: 2025-09-24 12:40:02 UTC
+Date/Publication: 2026-01-31 10:00:02 UTC

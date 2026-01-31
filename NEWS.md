@@ -1,3 +1,6 @@
+# ggcompare 0.0.6
+- Added `overall` parameter to `stat_compare()` to control whether to compare each group (on the axis) against the combined mean of all other groups.
+
 # ggcompare 0.0.5
 - Clarified the comparative relationship when comparing two groups.
 
